@@ -1,0 +1,162 @@
+{% extends 'store/base.html' %}
+{% block content %}
+
+<div class="container mt-4">
+    <h2 class="mb-4 fw-bold">Shopping Cart</h2>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body p-0">
+
+                    <div style="max-height: 600px; overflow-y: auto;" class="p-3">
+                        {% for item in items %}
+                        <div class="row align-items-center mb-3 pb-3 border-bottom cart-item-row" id="item-row-{{ item.id }}">
+
+                            <div class="col-md-2 col-4 text-center">
+                                {% if item.product.image %}
+                                    <img src="{{ item.product.image.url }}" class="img-fluid rounded shadow-sm" style="max-height: 80px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-light text-muted rounded d-flex align-items-center justify-content-center" style="height: 80px; width: 80px;">No Img</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-4 col-8">
+                                <h6 class="mb-1 fw-bold">{{ item.product.name }}</h6>
+                                <p class="text-muted small mb-0">{{ item.product.category.name }}</p>
+                                <p class="text-success fw-bold mb-0">₱<span class="item-price">{{ item.product.price }}</span></p>
+                            </div>
+
+                            <div class="col-md-3 col-6 mt-3 mt-md-0 d-flex justify-content-center align-items-center">
+                                <div class="input-group input-group-sm w-75">
+                                    <button class="btn btn-outline-secondary update-cart-btn" data-url="{% url 'update_quantity' item.id 'decrease' %}">-</button>
+
+                                    <input type="text" class="form-control text-center item-quantity" value="{{ item.quantity }}" readonly>
+
+                                    <button class="btn btn-outline-secondary update-cart-btn" data-url="{% url 'update_quantity' item.id 'increase' %}">+</button>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3 col-6 mt-3 mt-md-0 text-end">
+                                <p class="fw-bold mb-1">₱<span class="item-total">{{ item.get_total }}</span></p>
+                                <button class="btn btn-sm text-danger remove-item-btn p-0 text-decoration-underline" data-url="{% url 'remove_item' item.id %}">
+                                    Remove
+                                </button>
+                            </div>
+
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-5">
+                            <h4 class="text-muted mb-3">Your cart is empty.</h4>
+                            <a href="{% url 'products' %}" class="btn btn-primary">Go Shopping</a>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold border-bottom pb-3 mb-3">Order Summary</h5>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Subtotal</span>
+                        <span class="fw-bold">₱<span id="cart-subtotal">{{ total }}</span></span>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Shipping</span>
+                        <span class="fw-bold text-success">Free</span>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between mb-4">
+                        <h5 class="fw-bold">Total</h5>
+                        <h5 class="fw-bold text-primary">₱<span id="cart-total">{{ total }}</span></h5>
+                    </div>
+
+                    {% if items %}
+                        <a href="{% url 'checkout' %}" class="btn btn-primary w-100 btn-lg rounded-pill fw-bold">Proceed to Checkout</a>
+                    {% else %}
+                        <button class="btn btn-secondary w-100 btn-lg rounded-pill fw-bold" disabled>Checkout</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+
+    function updateCartTotals(newTotal, newCount) {
+        document.getElementById('cart-subtotal').innerText = parseFloat(newTotal).toFixed(2);
+        document.getElementById('cart-total').innerText = parseFloat(newTotal).toFixed(2);
+
+
+        const navCounter = document.getElementById('cart-counter');
+        if (navCounter) navCounter.innerText = newCount;
+    }
+
+
+    const updateButtons = document.querySelectorAll('.update-cart-btn');
+    updateButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = this.getAttribute('data-url');
+            const row = this.closest('.cart-item-row');
+
+            fetch(url, {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    if(data.new_quantity <= 0) {
+
+                        row.remove();
+                    } else {
+
+                        row.querySelector('.item-quantity').value = data.new_quantity;
+                        row.querySelector('.item-total').innerText = parseFloat(data.item_total).toFixed(2);
+                    }
+
+                    updateCartTotals(data.cart_total, data.cart_count);
+                }
+            });
+        });
+    });
+
+
+    const removeButtons = document.querySelectorAll('.remove-item-btn');
+    removeButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = this.getAttribute('data-url');
+            const row = this.closest('.cart-item-row');
+
+
+            row.style.opacity = '0.5';
+
+            fetch(url, {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    row.remove();
+                    updateCartTotals(data.cart_total, data.cart_count);
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends 'store/base.html' %}
+
+{% block content %}
+
+<div class="px-4 py-5 my-4 text-center rounded-5 shadow-sm" style="background: linear-gradient(135deg, #ffffff 0%, #ffe6f0 100%); border: 1px solid rgba(255,105,180,0.15);">
+    <h1 class="display-4 fw-bold mb-3" style="color: #ff69b4;">Welcome to M&M Boutique</h1>
+
+    <div class="col-lg-6 mx-auto">
+        <p class="lead mb-4 text-muted">Discover stylish, hand-picked outfits made just to bring out your inner confidence.</p>
+
+        <div class="d-grid gap-3 d-sm-flex justify-content-sm-center mt-4">
+            <a href="{% url 'products' %}" class="btn btn-primary btn-lg px-5 rounded-pill shadow-sm fw-bold">
+                Shop Collection
+            </a>
+
+            {% if user.is_authenticated %}
+                <a href="{% url 'orders' %}" class="btn btn-outline-dark btn-lg px-4 rounded-pill">
+                    My Orders
+                </a>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-outline-dark btn-lg px-4 rounded-pill">Login</a>
+                <a href="{% url 'register' %}" class="btn btn-light btn-lg px-4 rounded-pill border fw-bold" style="color: #ff69b4;">Register</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="container px-4 py-5">
+    <div class="row g-4 py-4 row-cols-1 row-cols-md-3">
+
+        <div class="col text-center">
+            <div class="d-inline-flex align-items-center justify-content-center mb-3 rounded-circle shadow-sm" style="width: 80px; height: 80px; background-color: #fff0f5; border: 2px solid white;">
+                <span class="fs-3 fw-bold" style="color: #ff69b4;">01</span>
+            </div>
+            <h4 class="fw-bold text-dark">Trendy Styles</h4>
+            <p class="text-muted px-3">Stay updated with the latest fashion curated by our style experts.</p>
+        </div>
+
+        <div class="col text-center">
+            <div class="d-inline-flex align-items-center justify-content-center mb-3 rounded-circle shadow-sm" style="width: 80px; height: 80px; background-color: #fff0f5; border: 2px solid white;">
+                <span class="fs-3 fw-bold" style="color: #ff69b4;">02</span>
+            </div>
+            <h4 class="fw-bold text-dark">Affordable</h4>
+            <p class="text-muted px-3">High-quality, boutique-level outfits with great prices that don't break the bank.</p>
+        </div>
+
+        <div class="col text-center">
+            <div class="d-inline-flex align-items-center justify-content-center mb-3 rounded-circle shadow-sm" style="width: 80px; height: 80px; background-color: #fff0f5; border: 2px solid white;">
+                <span class="fs-3 fw-bold" style="color: #ff69b4;">03</span>
+            </div>
+            <h4 class="fw-bold text-dark">Fast Services</h4>
+            <p class="text-muted px-3">Quick processing and highly reliable services.</p>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

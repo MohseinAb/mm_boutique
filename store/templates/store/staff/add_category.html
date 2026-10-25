@@ -1,0 +1,22 @@
+{% extends 'store/base.html' %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <h2>Add New Category</h2>
+
+    <div class="card p-4 mt-3">
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="name" class="form-label"><strong>Category Name</strong></label>
+                <input type="text" class="form-control" id="name" name="name" placeholder="Enter category name" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary mt-2">Add Category</button>
+            <a href="{% url 'manage_products' %}" class="btn btn-secondary mt-2">Cancel</a>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

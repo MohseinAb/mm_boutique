@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MM Boutique</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #fff0f5;
+            background-image: url('https://www.transparenttextures.com/patterns/flowers.png');
+        }
+
+
+        .navbar {
+            background: linear-gradient(to right, #ff69b4, #ff85c1) !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 22px;
+            color: white !important;
+        }
+
+
+        .btn-primary {
+            background-color: #ff69b4;
+            border: none;
+            border-radius: 25px;
+        }
+
+        .btn-primary:hover {
+            background-color: #ff1493;
+        }
+
+
+        .btn-light {
+            border-radius: 25px;
+            color: #d63384;
+            font-weight: 500;
+        }
+
+        .btn-warning, .btn-info, .btn-danger, .btn-outline-light {
+            border-radius: 25px;
+        }
+
+
+        .card {
+            border-radius: 15px;
+            border: none;
+            transition: 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+
+        h1, h2, h3 {
+            color: #d63384;
+            font-weight: 600;
+        }
+
+
+        .main-container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+
+<body>
+
+<nav class="navbar navbar-expand-lg py-3">
+    <div class="container d-flex justify-content-between align-items-center">
+        <a class="navbar-brand m-0" href="{% url 'landing' %}">MM Boutique</a>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if user.is_authenticated %}
+
+                {% if user.is_superuser %}
+                    <a href="{% url 'admin_dashboard' %}" class="btn btn-dark btn-sm">Admin Dashboard</a>
+                    <a href="{% url 'manage_products' %}" class="btn btn-light btn-sm">Products</a>
+                    <a href="{% url 'manage_orders' %}" class="btn btn-warning btn-sm">Orders</a>
+                    <a href="{% url 'sales_report' %}" class="btn btn-success btn-sm">Sales Report</a>
+                    <a href="{% url 'staff_profile' %}" class="btn btn-outline-light btn-sm">Profile</a>
+
+                {% elif user.is_staff %}
+                    <a href="{% url 'staff_dashboard' %}" class="btn btn-info btn-sm text-white">Dashboard</a>
+                    <a href="{% url 'manage_products' %}" class="btn btn-light btn-sm">Manage Products</a>
+                    <a href="{% url 'manage_orders' %}" class="btn btn-warning btn-sm">Orders</a>
+                    <a href="{% url 'staff_profile' %}" class="btn btn-outline-light btn-sm">Profile</a>
+
+                {% else %}
+                    <a href="{% url 'products' %}" class="btn btn-light btn-sm">Shop</a>
+
+                    <a href="{% url 'cart' %}" class="btn btn-warning btn-sm position-relative me-2">
+                        cart
+                        <span id="cart-counter" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light"></span>
+                    </a>
+
+                    <a href="{% url 'orders' %}" class="btn btn-info btn-sm text-white">My Orders</a>
+
+                    <a href="{% url 'profile' %}" class="btn btn-outline-light btn-sm">Profile</a>
+                {% endif %}
+
+                <span class="text-white fw-bold mx-2" style="font-size: 1.1rem;">{{ user.username }}</span>
+                <a href="{% url 'logout' %}" class="btn btn-danger btn-sm">Logout</a>
+
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm me-1">Login</a>
+                <a href="{% url 'register' %}" class="btn btn-light btn-sm text-pink fw-bold">Register</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="main-container">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

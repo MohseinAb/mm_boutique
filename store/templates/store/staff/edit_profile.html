@@ -1,0 +1,111 @@
+{% extends 'store/base.html' %}
+
+{% block content %}
+
+<style>
+    .django-form-fields input,
+    .django-form-fields textarea {
+        display: block;
+        width: 100%;
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #212529;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #ced4da;
+        appearance: none;
+        border-radius: 0.5rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+    .django-form-fields input:focus,
+    .django-form-fields textarea:focus {
+        border-color: #ff85c1;
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(255, 105, 180, 0.25);
+    }
+
+    .django-form-fields textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .django-form-fields p {
+        margin-bottom: 1rem;
+    }
+
+    .django-form-fields label {
+        font-weight: bold;
+        color: #6c757d;
+        font-size: 0.875em;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+        display: inline-block;
+    }
+</style>
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+
+                <div class="bg-light text-center py-4 border-bottom">
+                    <h3 class="mb-0 fw-bold text-dark">Edit Staff Account</h3>
+                    <p class="text-muted mb-0">Update your credentials below</p>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold text-muted small text-uppercase">First Name</label>
+                            <input type="text" name="first_name" value="{{ user.first_name }}" class="form-control form-control-lg rounded-3 fs-6">
+                        </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold text-muted small text-uppercase">Last Name</label>
+                                <input type="text" name="last_name" value="{{ user.last_name }}" class="form-control form-control-lg rounded-3 fs-6">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Username</label>
+                            <input type="text" name="username" value="{{ user.username }}" class="form-control form-control-lg rounded-3 fs-6" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Email Address</label>
+                            <input type="email" name="email" value="{{ user.email }}" class="form-control form-control-lg rounded-3 fs-6">
+                        </div>
+
+                        <div class="django-form-fields">
+                            {{ form.as_p }}
+                        </div>
+
+                        <div class="mb-4 mt-2">
+                            <label class="form-label fw-bold text-muted small text-uppercase">New Password</label>
+                            <input type="password" name="password" class="form-control form-control-lg rounded-3 fs-6" placeholder="Leave blank to keep current">
+                            <div class="form-text">Only fill this out if you wish to change your password.</div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn text-white fw-bold py-3 rounded-pill shadow-sm" style="background-color: #ff69b4;">
+                                Update Account
+                            </button>
+                            <a href="{% url 'staff_profile' %}" class="btn btn-light text-muted fw-bold py-3 rounded-pill border">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

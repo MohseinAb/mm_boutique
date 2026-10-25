@@ -1,0 +1,75 @@
+{% extends 'store/base.html' %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+                <div class="text-white text-center py-4" style="background: linear-gradient(to right, #ff69b4, #ff85c1);">
+                    <div class="rounded-circle bg-white d-inline-flex justify-content-center align-items-center mb-2 shadow" style="width: 80px; height: 80px;">
+                        <span class="fs-1 fw-bold" style="color: #ff69b4;">
+                            {% if user.first_name %}
+                                {{ user.first_name|slice:":1"|upper }}
+                            {% else %}
+                                {{ user.username|slice:":1"|upper }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    <h3 class="mb-0 fw-bold">{{ user.username }}</h3>
+                    <p class="mb-0 opacity-75">Staff Member</p>
+                </div>
+
+                <div class="card-body p-4">
+                    
+                    <h5 class="fw-bold mb-3 text-muted border-bottom pb-2">Account Details</h5>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.75rem;">Full Name</small>
+                        <span class="fs-6">
+                            {% if user.first_name or user.last_name %}
+                                {{ user.first_name }} {{ user.last_name }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.75rem;">Email Address</small>
+                        <span class="fs-6">{{ user.email|default:"<em class='text-muted'>Not provided</em>" }}</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.75rem;">Phone Number</small>
+                        <span class="fs-6">{{ user.customer.phone|default:"<em class='text-muted'>Not provided</em>" }}</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.75rem;">Address</small>
+                        <span class="fs-6">{{ user.customer.address|default:"<em class='text-muted'>Not provided</em>" }}</span>
+                    </div>
+
+                    <div class="mb-4">
+                        <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.75rem;">Account Role</small>
+                        {% if user.is_staff %}
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3 py-2 mt-1">Active Staff</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'edit_staff_account' %}" class="btn text-white fw-bold py-2 rounded-pill shadow-sm" style="background-color: #ff69b4;">
+                            Edit Profile
+                        </a>
+                        <a href="{% url 'staff_dashboard' %}" class="btn btn-light text-muted fw-bold py-2 rounded-pill border">
+                            Back to Dashboard
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

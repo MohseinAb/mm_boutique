@@ -1,0 +1,237 @@
+{% extends 'store/base.html' %}
+{% block content %}
+
+<h4 class="fw-bold mb-3 text-danger">Refund Action Required</h4>
+<div class="card shadow-sm border-0 rounded-4 p-4 mb-5">
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in refund_queue %}
+                <tr>
+                    <td class="fw-bold">#{{ order.id }}</td>
+                    <td>{{ order.customer.user.username }}</td>
+                    <td class="text-danger fw-bold">₱{{ order.get_total }}</td>
+                    <td>{{ order.payment_set.first.get_method_display }}</td>
+                    <td class="text-end">
+                        <a href="{% url 'mark_refunded' order.id %}" class="btn btn-sm btn-success rounded-pill px-3 fw-bold"
+                           onclick="return confirm('Confirm that you have manually sent the refund for Order #{{ order.id }}?')">
+                            Mark as Refunded
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-3">All refunds are up to date!</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="container mt-4 mb-5">
+
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+        <h2 class="fw-bold mb-0 text-dark">Admin Control Panel</h2>
+        <span class="text-muted">Overview & Management</span>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-4 text-center h-100" style="background: linear-gradient(135deg, #ff69b4 0%, #ff85c1 100%); color: white;">
+                <div class="card-body py-4">
+                    <h6 class="text-uppercase fw-bold opacity-75 mb-2">Total Sales</h6>
+                    <h2 class="display-6 fw-bold mb-0">&#8369;{{ total_sales|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-4 text-center h-100 bg-white">
+                <div class="card-body py-4">
+                    <h6 class="text-uppercase fw-bold text-muted mb-2">Total Orders</h6>
+                    <h2 class="display-6 fw-bold text-dark mb-0">{{ total_orders }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-4 text-center h-100 bg-white">
+                <div class="card-body py-4">
+                    <h6 class="text-uppercase fw-bold text-muted mb-2">Total Users</h6>
+                    <h2 class="display-6 fw-bold text-dark mb-0">{{ total_users }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4 class="fw-bold mb-3 text-dark">Order Status</h4>
+    <div class="row g-3 mb-5">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 rounded-4 text-center bg-light">
+                <div class="card-body py-3">
+                    <h3 class="fw-bold text-secondary mb-1">{{ pending_count }}</h3>
+                    <span class="text-muted small text-uppercase fw-bold">Pending</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 rounded-4 text-center" style="background-color: #fff8e1;">
+                <div class="card-body py-3">
+                    <h3 class="fw-bold text-warning mb-1">{{ processing_count }}</h3>
+                    <span class="text-muted small text-uppercase fw-bold">Preparing</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 rounded-4 text-center" style="background-color: #e0f7fa;">
+                <div class="card-body py-3">
+                    <h3 class="fw-bold text-info mb-1">{{ shipped_count }}</h3>
+                    <span class="text-muted small text-uppercase fw-bold">Ready for Pickup</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 rounded-4 text-center" style="background-color: #e8f5e9;">
+                <div class="card-body py-3">
+                    <h3 class="fw-bold text-success mb-1">{{ delivered_count }}</h3>
+                    <span class="text-muted small text-uppercase fw-bold">Completed</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4 class="fw-bold mb-3 text-dark">Daily Sales Log</h4>
+    <div class="card shadow-sm border-0 rounded-4 p-4 mb-5">
+        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+                    <tr>
+                        <th class="text-muted small text-uppercase py-3">Date</th>
+                        <th class="text-end text-muted small text-uppercase py-3">Total Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in daily_sales reversed %}
+                    <tr>
+                        <td class="fw-bold text-dark py-3">{{ sale.date }}</td>
+                        <td class="text-end text-success fw-bold py-3">&#8369;{{ sale.total_sales|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2" class="text-center text-muted py-5">No sales data recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <h4 class="fw-bold mb-3 text-dark">User Management</h4>
+    <div class="card shadow-sm border-0 rounded-4 p-4 mb-4">
+
+        <form method="GET" class="mb-4">
+            <div class="row g-2">
+                <div class="col-md-5">
+                    <input type="text" name="user_search" class="form-control rounded-pill px-4" placeholder="Search by username..." value="{{ user_search }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn text-white rounded-pill w-100 fw-bold" style="background-color: #ff69b4;">Search</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-muted small text-uppercase">Username</th>
+                        <th class="text-muted small text-uppercase">Email</th>
+                        <th class="text-muted small text-uppercase">Joined</th>
+                        <th class="text-muted small text-uppercase text-center">Role</th>
+                        <th class="text-muted small text-uppercase text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td class="fw-bold">{{ u.username }}</td>
+                        <td class="text-muted">{{ u.email|default:"Not provided" }}</td>
+                        <td class="text-muted small">{{ u.date_joined|date:"M d, Y" }}</td>
+                        <td class="text-center">
+                            {% if u.is_superuser %}
+                                <span class="badge bg-dark rounded-pill px-3">Admin</span>
+                            {% elif u.is_staff %}
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3">Staff</span>
+                            {% else %}
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary rounded-pill px-3">Customer</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if not u.is_superuser %}
+                                <a href="{% url 'toggle_staff' u.id %}"
+                                   class="btn btn-outline-warning btn-sm rounded-pill px-3 fw-bold me-1"
+                                   onclick="return confirm('Are you sure you want to toggle staff status for {{ u.username }}?')">
+                                    Toggle Staff
+                                </a>
+
+                                <a href="{% url 'delete_user' u.id %}"
+                                   class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold"
+                                   onclick="return confirm('Are you sure you want to delete user {{ u.username }}? This cannot be undone.')">
+                                    Delete
+                                </a>
+                            {% else %}
+                                <span class="text-muted small fst-italic">Protected</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-5">No users found matching your search.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if users.has_other_pages %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center mb-0">
+                {% if users.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link rounded-start-pill text-dark" href="?user_search={{ user_search }}&user_page={{ users.previous_page_number }}">Previous</a>
+                    </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link text-white border-0" style="background-color: #ff69b4;">
+                        Page {{ users.number }} of {{ users.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if users.has_next %}
+                    <li class="page-item">
+                        <a class="page-link rounded-end-pill text-dark" href="?user_search={{ user_search }}&user_page={{ users.next_page_number }}">Next</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

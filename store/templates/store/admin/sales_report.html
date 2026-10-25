@@ -1,0 +1,207 @@
+{% extends 'store/base.html' %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4 hide-on-print">
+        <div>
+            <h2 class="fw-bold mb-0 text-dark">Boutique Sales Report</h2>
+            <small class="text-muted">Generated on {{ "now"|date:"F d, Y" }}</small>
+        </div>
+        <button onclick="window.print()" class="btn text-white rounded-pill px-4 fw-bold shadow-sm" style="background-color: #ff69b4;">
+            <i class="bi bi-printer-fill me-2"></i> Print Full Report
+        </button>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4 p-4 mb-4 bg-light hide-on-print">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-bold text-muted small text-uppercase">View Format</label>
+                <select name="view" id="viewSelect" class="form-select rounded-pill px-3">
+                    <option value="daily" {% if view == "daily" %}selected{% endif %}>Daily</option>
+                    <option value="monthly" {% if view == "monthly" %}selected{% endif %}>Monthly</option>
+                    <option value="yearly" {% if view == "yearly" %}selected{% endif %}>Yearly</option>
+                </select>
+            </div>
+
+            <div class="col-md-3" id="monthDiv">
+                <label class="form-label fw-bold text-muted small text-uppercase">Month</label>
+                <select name="month" class="form-select rounded-pill px-3">
+                    <option value="">-- All Months --</option>
+                    {% for m in months_list %}
+                        <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>
+                            {{ m|month_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3" id="yearDiv">
+                <label class="form-label fw-bold text-muted small text-uppercase">Year</label>
+                <select name="year" class="form-select rounded-pill px-3">
+                    {% for y in years %}
+                    <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-dark w-100 rounded-pill fw-bold">Update Report</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="printArea">
+        <div class="text-center d-none d-print-block mb-4">
+            <h2 class="fw-bold">M&M Boutique Sales Report</h2>
+            <p class="text-muted">Report Period: {{ view|title }} ({{ selected_month|month_name|default:"All Months" }} {{ selected_year }})</p>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-6">
+                <div class="card shadow-sm border-0 rounded-4 text-center h-100"
+                     style="background: linear-gradient(to right, #ff69b4, #ff85c1); color: white;">
+                    <div class="card-body py-4">
+                        <h6 class="text-uppercase fw-bold opacity-75 mb-2">Net Sales (Completed)</h6>
+                        <h2 class="display-6 fw-bold mb-0">₱{{ total_sales|floatformat:2 }}</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6">
+                <div class="card shadow-sm border-0 rounded-4 text-center h-100 bg-white border">
+                    <div class="card-body py-4">
+                        <h6 class="text-uppercase fw-bold text-muted mb-2">Total Orders</h6>
+                        <h2 class="display-6 fw-bold text-dark mb-0">{{ total_orders }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 rounded-4 p-4 mb-5">
+            <h5 class="fw-bold mb-4 text-dark border-bottom pb-2">Revenue Breakdown</h5>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="text-muted small text-uppercase">
+                        <tr>
+                            <th>Period</th>
+                            <th class="text-end">Completed Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if view == 'daily' %}
+                            {% for date in dates %}
+                            <tr>
+                                <td class="py-2">{{ date }}</td>
+                                <td class="py-2 text-end fw-bold text-success">₱{{ totals|get_at_index:forloop.counter0|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="2" class="text-center py-3 text-muted">No daily data found.</td></tr>
+                            {% endfor %}
+                        {% elif view == 'monthly' %}
+                            {% for item in monthly_sales %}
+                            <tr>
+                                <td class="py-2">{{ item.month|date:"F Y" }}</td>
+                                <td class="py-2 text-end fw-bold text-success">₱{{ item.total|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% elif view == 'yearly' %}
+                            {% for item in yearly_sales %}
+                            <tr>
+                                <td class="py-2">{{ item.year|date:"Y" }}</td>
+                                <td class="py-2 text-end fw-bold text-success">₱{{ item.total|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <h5 class="fw-bold mb-3 text-dark">Transaction Audit Log</h5>
+        <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="py-3 ps-4">Order ID</th>
+                            <th class="py-3">Customer</th>
+                            <th class="py-3">Status</th>
+                            <th class="py-3 text-end pe-4">Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td class="fw-bold ps-4">#{{ order.id }}</td>
+                            <td>{{ order.customer.user.username }}</td>
+                            <td>
+                                {% if order.status == 'Completed' %}
+                                    <span class="badge bg-success rounded-pill px-3">Completed</span>
+                                {% elif order.status == 'Cancelled' %}
+                                    <span class="badge bg-danger rounded-pill px-3">Cancelled</span>
+                                {% else %}
+                                    <span class="badge bg-secondary rounded-pill px-3">{{ order.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end fw-bold pe-4">
+                                {% if order.status == 'Completed' %}
+                                    <span class="text-success">₱{{ order.get_total|floatformat:2 }}</span>
+                                {% else %}
+                                    <span class="text-muted text-decoration-line-through">₱{{ order.get_total|floatformat:2 }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% if orders.has_other_pages %}
+    <nav class="hide-on-print mt-4">
+        <ul class="pagination justify-content-center">
+            {% if orders.has_previous %}
+                <li class="page-item"><a class="page-link text-pink" href="?page={{ orders.previous_page_number }}&view={{ view }}&month={{ selected_month }}&year={{ selected_year }}">Previous</a></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link bg-pink border-0">Page {{ orders.number }} of {{ orders.paginator.num_pages }}</span></li>
+            {% if orders.has_next %}
+                <li class="page-item"><a class="page-link text-pink" href="?page={{ orders.next_page_number }}&view={{ view }}&month={{ selected_month }}&year={{ selected_year }}">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<script>
+    // Logic for dynamic filters
+    const viewSelect = document.getElementById('viewSelect');
+    const monthDiv = document.getElementById('monthDiv');
+    const yearDiv = document.getElementById('yearDiv');
+
+    function toggleFilterFields() {
+        if (!viewSelect) return;
+        const val = viewSelect.value;
+        monthDiv.style.display = (val === 'daily' || val === 'monthly') ? 'block' : 'none';
+        yearDiv.style.display = (val === 'daily' || val === 'monthly' || val === 'yearly') ? 'block' : 'none';
+    }
+
+    if (viewSelect) {
+        viewSelect.addEventListener('change', toggleFilterFields);
+        window.addEventListener('DOMContentLoaded', toggleFilterFields);
+    }
+</script>
+
+<style>
+.bg-pink { background-color: #ff69b4 !important; }
+.text-pink { color: #ff69b4 !important; }
+@media print {
+    @page { size: portrait; margin: 1cm; }
+    .hide-on-print, nav, footer { display: none !important; }
+    .card { border: 1px solid #ddd !important; box-shadow: none !important; }
+    .container { width: 100% !important; max-width: 100% !important; }
+    body { font-size: 12pt; }
+}
+</style>
+{% endblock %}

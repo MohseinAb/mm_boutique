@@ -1,0 +1,178 @@
+{% extends 'store/base.html' %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <h2 class="fw-bold mb-4 text-dark">Checkout</h2>
+
+    <div class="row">
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 rounded-4 p-4 mb-4 h-100">
+                <h5 class="fw-bold mb-4 border-bottom pb-2">Order Summary</h5>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr class="text-muted small text-uppercase">
+                                <th>Product</th>
+                                <th class="text-center">Qty</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr>
+                                <td class="fw-bold text-dark">{{ item.product.name }}</td>
+                                <td class="text-center">x{{ item.quantity }}</td>
+                                <td class="text-end fw-bold">₱{{ item.get_total }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="d-flex justify-content-between mt-auto pt-3 border-top align-items-center">
+                    <div>
+                        <h5 class="fw-bold mb-0">Grand Total</h5>
+                        <small class="text-muted">Converted by Currency Microservice</small>
+                    </div>
+                    <div class="text-end">
+                        <h5 class="fw-bold text-primary mb-0">₱{{ total }}</h5>
+                        <span class="badge bg-light text-dark border mt-1">
+                            ≈ ${{ usd_amount }} USD <small class="text-muted">(Rate: {{ exchange_rate }})</small>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 rounded-4 p-4">
+                <h5 class="fw-bold mb-4 border-bottom pb-2">Payment Details</h5>
+
+                <p class="text-muted small mb-3">Please select your preferred payment method:</p>
+
+                <div class="form-check card p-3 mb-3 border border-light shadow-none hover-shadow transition-all"
+                     style="cursor: pointer;"
+                     onclick="document.getElementById('methodCash').checked = true; togglePaymentUI();">
+                    <div class="d-flex align-items-center">
+                        <input class="form-check-input" type="radio" name="paymentMethod" id="methodCash" value="COP" checked>
+                        <label class="form-check-label fw-bold ms-2 mb-0" for="methodCash" style="cursor: pointer;">
+                            Cash on Pickup (₱{{ total }} PHP)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-check card p-3 mb-4 border border-light shadow-none hover-shadow transition-all"
+                     style="cursor: pointer;"
+                     onclick="document.getElementById('methodPaypal').checked = true; togglePaymentUI();">
+                    <div class="d-flex align-items-center">
+                        <input class="form-check-input" type="radio" name="paymentMethod" id="methodPaypal" value="PayPal">
+                        <label class="form-check-label fw-bold ms-2 mb-0" for="methodPaypal" style="cursor: pointer;">
+                            PayPal / Online Payment (${{ usd_amount }} USD)
+                        </label>
+                    </div>
+                </div>
+
+                <div id="cash-ui">
+                    <button id="confirm-cash-btn" class="btn btn-dark btn-lg w-100 rounded-pill fw-bold py-3 shadow-sm">
+                        Confirm Cash Order
+                    </button>
+                </div>
+
+                <div id="paypal-ui" style="display: none;">
+                    <div id="paypal-button-container"></div>
+                </div>
+
+                <div class="text-center mt-3">
+                    <a href="{% url 'cart' %}" class="btn btn-link text-muted text-decoration-none small">
+                        Return to Cart
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PayPal SDK configured for USD currency -->
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=USD"></script>
+
+<script>
+    const totalAmountPHP = '{{ total }}';
+    const totalAmountUSD = '{{ usd_amount }}';
+    const csrfToken = '{{ csrf_token }}';
+
+    function togglePaymentUI() {
+        const isCash = document.getElementById('methodCash').checked;
+        document.getElementById('cash-ui').style.display = isCash ? 'block' : 'none';
+        document.getElementById('paypal-ui').style.display = isCash ? 'none' : 'block';
+    }
+
+    // PayPal buttons initiate charge in USD
+    paypal.Buttons({
+        createOrder: function(data, actions) {
+            return actions.order.create({
+                purchase_units: [{
+                    amount: { value: totalAmountUSD }
+                }]
+            });
+        },
+        onApprove: function(data, actions) {
+            return actions.order.capture().then(function(details) {
+                processOrder('PayPal', totalAmountUSD);
+            });
+        },
+        onError: function(err) {
+            console.error('PayPal Error:', err);
+            alert("There was an issue with the PayPal transaction.");
+        }
+    }).render('#paypal-button-container');
+
+    function processOrder(method, usdPaid = 0) {
+        const cashBtn = document.getElementById('confirm-cash-btn');
+        if (cashBtn) cashBtn.disabled = true;
+
+        fetch("{% url 'checkout' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                'payment_method': method,
+                'usd_paid': usdPaid
+            })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.href = "{% url 'orders' %}";
+            } else {
+                alert("Error: " + (data.message || "An error occurred."));
+                if (cashBtn) cashBtn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Fetch Error:', error);
+            alert("Failed to process order. Please check your connection.");
+            if (cashBtn) cashBtn.disabled = false;
+        });
+    }
+
+    document.getElementById('confirm-cash-btn').addEventListener('click', function() {
+        processOrder('COP', 0);
+    });
+
+    document.addEventListener('DOMContentLoaded', togglePaymentUI);
+</script>
+
+<style>
+    .transition-all { transition: all 0.2s ease-in-out; }
+    .hover-shadow:hover {
+        border-color: #ff69b4 !important;
+        box-shadow: 0 4px 8px rgba(255, 105, 180, 0.1) !important;
+    }
+</style>
+{% endblock %}

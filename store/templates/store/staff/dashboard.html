@@ -1,0 +1,54 @@
+{% extends 'store/base.html' %}
+
+{% block content %}
+<style>
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+.animate-pulse { animation: pulse-red 2s infinite; }
+</style>
+
+<div class="container mt-5">
+    <h1 class="mb-4">STAFF DASHBOARD</h1>
+    <p class="lead">Welcome, <strong>{{ user.username }}</strong>!</p>
+
+    <div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-dark bg-warning mb-3 shadow-sm border-0 h-100 rounded-4">
+            <div class="card-body py-4">
+                <h5 class="card-title fw-bold">Pending & Active Orders</h5>
+                <p class="card-text display-4 fw-bold mb-0">{{ active_orders_count|default:"0" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card text-white bg-danger mb-3 shadow-sm border-0 h-100 rounded-4 {% if refund_needed_count > 0 %}animate-pulse{% endif %}">
+            <div class="card-body py-4">
+                <h5 class="card-title fw-bold">Refunds Requested</h5>
+                <p class="card-text display-4 fw-bold mb-0">{{ refund_needed_count|default:"0" }}</p>
+                <small class="opacity-75">Requires Admin Action</small>
+            </div>
+        </div>
+    </div>
+    
+    </div>
+
+    <div class="d-flex flex-wrap gap-3 mt-2">
+        <a href="{% url 'manage_orders' %}" class="btn btn-warning btn-lg position-relative">
+            Manage Orders
+            {% if active_orders_count > 0 %}
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light">
+                {{ active_orders_count }}
+                <span class="visually-hidden">active orders</span>
+            </span>
+            {% endif %}
+        </a>
+        
+        <a href="{% url 'manage_products' %}" class="btn btn-primary btn-lg"> Manage Products</a>
+        <a href="{% url 'staff_profile' %}" class="btn btn-info btn-lg text-white">Profile</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,190 @@
+{% extends 'store/base.html' %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark">Manage Orders</h2>
+        <span class="badge bg-pink text-white rounded-pill px-3 py-2" style="background-color: #ff69b4;">
+            Staff Access
+        </span>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4 p-4">
+        <form method="GET" class="row g-2 mb-4 bg-light p-3 rounded-3">
+            <div class="col-md-5">
+                <input type="text" name="search" class="form-control rounded-pill px-4" placeholder="Search by username or order ID" value="{{ search_query }}">
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select rounded-pill px-3">
+                    {% for status in status_choices %}
+                        <option value="{{ status }}" {% if status == status_filter %}selected{% endif %}>{{ status }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-dark w-100 rounded-pill fw-bold">Apply</button>
+            </div>
+            <div class="col-md-2">
+                <a href="{% url 'manage_orders' %}" class="btn btn-outline-secondary w-100 rounded-pill">Clear</a>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle text-center">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-muted small text-uppercase py-3">Order ID</th>
+                        <th class="text-muted small text-uppercase py-3">Customer</th>
+                        <th class="text-muted small text-uppercase py-3">Payment</th>
+                        <th class="text-muted small text-uppercase py-3">Status</th>
+                        <th class="text-muted small text-uppercase py-3">Total</th>
+                        <th class="text-muted small text-uppercase py-3">Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td class="fw-bold text-dark">#{{ order.id }}</td>
+                        <td>{{ order.customer.user.username }}</td>
+
+                        <td>
+                            {% with payment=order.payment_set.first %}
+                                {% if payment %}
+                                    <span class="badge bg-light text-dark border rounded-pill px-3">
+                                        {{ payment.get_method_display }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted small fst-italic">No Record</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+
+                        <td>
+                            {% if order.status == 'Pending' %}
+                                <span class="badge bg-secondary rounded-pill px-3">Pending</span>
+                            {% elif order.status == 'Preparing' %}
+                                <span class="badge bg-warning text-dark rounded-pill px-3">Preparing</span>
+                            {% elif order.status == 'Ready for Pickup' %}
+                                <span class="badge bg-info text-dark rounded-pill px-3">Ready</span>
+                            {% elif order.status == 'Completed' %}
+                                <span class="badge bg-success rounded-pill px-3">Completed</span>
+                            {% elif order.status == 'Cancelled' %}
+                                <span class="badge bg-danger rounded-pill px-3">Cancelled</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="fw-bold">₱{{ order.get_total }}</td>
+
+                        <td>
+                            <div class="d-flex gap-1 justify-content-center">
+                                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#orderModal{{ order.id }}">
+                                    View
+                                </button>
+
+                                {% if order.status != 'Completed' and order.status != 'Cancelled' %}
+                                    <div class="dropdown">
+                                        <button class="btn btn-dark btn-sm dropdown-toggle rounded-pill px-3" type="button" data-bs-toggle="dropdown">
+                                            Update
+                                        </button>
+                                        <ul class="dropdown-menu shadow border-0 rounded-3">
+                                            <li><a class="dropdown-item" href="{% url 'update_status' order.id 'Preparing' %}">Preparing</a></li>
+                                            <li><a class="dropdown-item" href="{% url 'update_status' order.id 'Ready for Pickup' %}">Ready for Pickup</a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-success fw-bold" href="{% url 'update_status' order.id 'Completed' %}">Mark Completed</a></li>
+                                            <li><a class="dropdown-item text-danger" href="{% url 'update_status' order.id 'Cancelled' %}" onclick="return confirm('Cancel Order #{{ order.id }}?')">Cancel Order</a></li>
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">No orders found matching your criteria.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if orders.has_other_pages %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if orders.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link rounded-start-pill text-dark" href="?page={{ orders.previous_page_number }}&search={{ search_query }}&status={{ status_filter }}">Previous</a>
+                    </li>
+                {% endif %}
+                <li class="page-item active">
+                    <span class="page-link text-white border-0" style="background-color: #ff69b4;">Page {{ orders.number }} of {{ orders.paginator.num_pages }}</span>
+                </li>
+                {% if orders.has_next %}
+                    <li class="page-item">
+                        <a class="page-link rounded-end-pill text-dark" href="?page={{ orders.next_page_number }}&search={{ search_query }}&status={{ status_filter }}">Next</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+{% for order in orders %}
+<div class="modal fade" id="orderModal{{ order.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">Order Details #{{ order.id }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <h6 class="text-muted text-uppercase small fw-bold mb-3">Customer Information</h6>
+                        <p class="mb-1"><strong>Name:</strong> {{ order.customer.user.username }}</p>
+                        <p class="mb-1"><strong>Phone:</strong> {{ order.customer.phone }}</p>
+                        <p class="mb-0 text-wrap"><strong>Address:</strong> {{ order.customer.address }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted text-uppercase small fw-bold mb-3">Payment & Log</h6>
+                        {% with payment=order.payment_set.first %}
+                        <p class="mb-1"><strong>Method:</strong> {{ payment.get_method_display|default:"Unknown" }}</p>
+                        <p class="mb-1"><strong>Date:</strong> {{ order.date_created|date:"M d, Y h:i A" }}</p>
+                        <p class="mb-0"><strong>Amount Paid:</strong> ₱{{ payment.amount|default:order.get_total }}</p>
+                        {% endwith %}
+                    </div>
+                </div>
+
+                <hr class="my-4 text-muted">
+
+                <h6 class="text-muted text-uppercase small fw-bold mb-3">Items Purchased</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <tbody>
+                            {% for item in order.orderitem_set.all %}
+                            <tr>
+                                <td>{{ item.product.name }}</td>
+                                <td class="text-center">x{{ item.quantity }}</td>
+                                <td class="text-end fw-bold">₱{{ item.get_total }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="2" class="text-end">Total Amount</th>
+                                <th class="text-end text-primary">₱{{ order.get_total }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}
