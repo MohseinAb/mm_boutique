@@ -17,7 +17,8 @@ from django.conf import settings
 from django.db import transaction
 
 # Microservice helper imports
-from .services import convert_php_to_usd, log_order_to_firebase
+from .services import convert_php_to_usd, log_order_to_firebase, send_email_receipt
+
 
 
 def register(request):
@@ -153,15 +154,24 @@ def checkout(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            payment_method = data.get('payment_method')  # 'COP' or 'PayPal'
+            payment_method = data.get('payment_method')
             usd_paid = float(data.get('usd_paid', 0.0))
+            
+            # Extract Delivery Data
+            delivery_method = data.get('delivery_method', 'Pickup')
+            street_address = data.get('street_address', '')
+            city = data.get('city', '')
+            zip_code = data.get('zip_code', '')
 
             with transaction.atomic():
-                # 1. Create the Order in local SQLite DB
                 order = Order.objects.create(
                     customer=customer,
                     complete=True,
-                    status='Pending'
+                    status='Pending',
+                    delivery_method=delivery_method,
+                    street_address=street_address,
+                    city=city,
+                    zip_code=zip_code
                 )
 
                 for item in items:
@@ -187,7 +197,6 @@ def checkout(request):
 
                 items.delete()
 
-            # 2. Call Microservice: Log Order into Firebase Cloud Database
             firebase_result = log_order_to_firebase(
                 order_id=str(order.id),
                 customer_name=request.user.username,
@@ -195,16 +204,25 @@ def checkout(request):
                 usd_paid=usd_paid if usd_paid > 0 else float(total)
             )
 
+
+            # 4. Call Microservice: Send Email Receipt
+            customer_email = request.user.email if request.user.email else "customer@example.com"
+            email_result = send_email_receipt(
+                email=customer_email,
+                order_id=str(order.id),
+                total=float(total)
+            )
+
             return JsonResponse({
                 'status': 'success',
                 'order_id': order.id,
-                'firebase_status': firebase_result.get('status')
+                'firebase_status': firebase_result.get('status'),
+                'email_status': email_result.get('status')
             })
 
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-    # 3. Call Microservice: Convert PHP Total to USD using Frankfurter API
     conversion_data = convert_php_to_usd(float(total))
     usd_amount = conversion_data.get("usd_amount", 0.0)
     exchange_rate = conversion_data.get("exchange_rate", 0.0)
@@ -214,7 +232,8 @@ def checkout(request):
         'total': total,
         'usd_amount': usd_amount,
         'exchange_rate': exchange_rate,
-        'paypal_client_id': 'Ae1Gm2Y-0sTD2hwvNsLoEMPqBykmB1LXBHMQlj1LgCrCXp6wrx_EMqFJ0HvdzDgTEK5VeWLG9VknfrgV'
+        'paypal_client_id': 'test',
+        'customer': customer,
     }
     return render(request, 'store/checkout.html', context)
 
@@ -378,6 +397,10 @@ def edit_profile(request):
             if username:
                 request.user.username = username
 
+            email = request.POST.get('email')
+            if email is not None:        
+                request.user.email = email
+
             first_name = request.POST.get('first_name')
             last_name = request.POST.get('last_name')
             if first_name is not None:
@@ -399,7 +422,9 @@ def edit_profile(request):
 
     return render(request, 'store/edit_profile.html', {
         'form': form,
+        'customer': customer,
         'username': request.user.username,
+        'email': request.user.email,
         'first_name': request.user.first_name,
         'last_name': request.user.last_name,
     })

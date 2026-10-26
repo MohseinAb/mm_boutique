@@ -46,8 +46,15 @@
                     </div>
 
                     <div class="mb-4">
-                        <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.75rem;">Delivery Address</small>
-                        <span class="fs-6">{{ customer.address|default:"<em class='text-muted'>Not provided</em>" }}</span>
+                        <label class="small text-muted fw-bold mb-1">DELIVERY ADDRESS</label>
+                        <div class="text-dark">
+                            {% if customer.street_address or customer.city %}
+                                {{ customer.street_address|default_if_none:"" }}<br>
+                                {{ customer.city|default_if_none:"" }} {{ customer.zip_code|default_if_none:"" }}
+                            {% else %}
+                                <em class="text-muted">Not provided</em>
+                            {% endif %}
+                        </div>
                     </div>
 
                     <div class="d-grid gap-2">

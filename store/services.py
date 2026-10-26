@@ -46,3 +46,16 @@ def log_order_to_firebase(order_id: str, customer_name: str, php_total: float, u
     except Exception as e:
         logger.error(f"Firebase logging microservice error: {e}")
         return {"status": "ERROR", "message": str(e)}
+
+def send_email_receipt(email, order_id, total):
+    try:
+        payload = {
+            "customer_email": email,
+            "order_id": order_id,
+            "total_amount": total
+        }
+        # Docker networking allows us to route directly to the container name
+        response = requests.post("http://email_service:5004/api/send-receipt", json=payload, timeout=5)
+        return response.json()
+    except Exception as e:
+        return {"status": "ERROR", "message": str(e)}

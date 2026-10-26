@@ -46,24 +46,45 @@
 
         <div class="col-lg-5">
             <div class="card shadow-sm border-0 rounded-4 p-4">
-                <h5 class="fw-bold mb-4 border-bottom pb-2">Payment Details</h5>
+                <h5 class="fw-bold mb-3 border-bottom pb-2">Delivery Details</h5>
+                <div class="mb-4">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="deliveryMethod" id="deliveryPickup" value="Pickup" checked onchange="toggleAddress()">
+                        <label class="form-check-label fw-bold" for="deliveryPickup">Store Pickup</label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" name="deliveryMethod" id="deliveryShip" value="Delivery" onchange="toggleAddress()">
+                        <label class="form-check-label fw-bold" for="deliveryShip">Home Delivery</label>
+                    </div>
 
-                <p class="text-muted small mb-3">Please select your preferred payment method:</p>
+                    <div id="address-fields" style="display: none;">
+                        <div class="mb-2">
+                            <label class="small text-muted">ZIP Code</label>
+                            <input type="text" id="zip_code" class="form-control" value="{{ customer.zip_code|default_if_none:'' }}" placeholder="e.g. 9200">
+                            <small id="zip-status" class="text-primary"></small>
+                        </div>
+                        <div class="mb-2">
+                            <label class="small text-muted">City (API Auto-fill)</label>
+                            <input type="text" id="city" class="form-control" value="{{ customer.city|default_if_none:'' }}" readonly>
+                        </div>
+                        <div class="mb-2">
+                            <label class="small text-muted">Street Address</label>
+                            <input type="text" id="street_address" class="form-control" value="{{ customer.street_address|default_if_none:'' }}" placeholder="House number and street name">
+                        </div>
+                    </div>
+                </div>
 
-                <div class="form-check card p-3 mb-3 border border-light shadow-none hover-shadow transition-all"
-                     style="cursor: pointer;"
-                     onclick="document.getElementById('methodCash').checked = true; togglePaymentUI();">
+                <h5 class="fw-bold mb-3 border-bottom pb-2">Payment Details</h5>
+                <div class="form-check card p-3 mb-3 border border-light shadow-none hover-shadow transition-all" style="cursor: pointer;" onclick="document.getElementById('methodCash').checked = true; togglePaymentUI();">
                     <div class="d-flex align-items-center">
                         <input class="form-check-input" type="radio" name="paymentMethod" id="methodCash" value="COP" checked>
                         <label class="form-check-label fw-bold ms-2 mb-0" for="methodCash" style="cursor: pointer;">
-                            Cash on Pickup (₱{{ total }} PHP)
+                            Cash on Pickup/Delivery (₱{{ total }} PHP)
                         </label>
                     </div>
                 </div>
 
-                <div class="form-check card p-3 mb-4 border border-light shadow-none hover-shadow transition-all"
-                     style="cursor: pointer;"
-                     onclick="document.getElementById('methodPaypal').checked = true; togglePaymentUI();">
+                <div class="form-check card p-3 mb-4 border border-light shadow-none hover-shadow transition-all" style="cursor: pointer;" onclick="document.getElementById('methodPaypal').checked = true; togglePaymentUI();">
                     <div class="d-flex align-items-center">
                         <input class="form-check-input" type="radio" name="paymentMethod" id="methodPaypal" value="PayPal">
                         <label class="form-check-label fw-bold ms-2 mb-0" for="methodPaypal" style="cursor: pointer;">
@@ -92,13 +113,16 @@
     </div>
 </div>
 
-<!-- PayPal SDK configured for USD currency -->
-<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=USD"></script>
-
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}¤cy=USD"></script>
 <script>
     const totalAmountPHP = '{{ total }}';
     const totalAmountUSD = '{{ usd_amount }}';
     const csrfToken = '{{ csrf_token }}';
+
+    function toggleAddress() {
+        const isDelivery = document.getElementById('deliveryShip').checked;
+        document.getElementById('address-fields').style.display = isDelivery ? 'block' : 'none';
+    }
 
     function togglePaymentUI() {
         const isCash = document.getElementById('methodCash').checked;
@@ -106,13 +130,37 @@
         document.getElementById('paypal-ui').style.display = isCash ? 'none' : 'block';
     }
 
-    // PayPal buttons initiate charge in USD
+    document.getElementById('zip_code').addEventListener('input', function() {
+        const zip = this.value;
+        const statusText = document.getElementById('zip-status');
+        
+        if (zip.length === 4) {
+            statusText.innerText = "Fetching city via API...";
+            fetch(`http://localhost:5003/api/zip/${zip}`)
+                .then(response => {
+                    if (!response.ok) throw new Error("ZIP not found");
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('city').value = data.city;
+                    statusText.innerText = "City found successfully!";
+                    statusText.className = "text-success small";
+                })
+                .catch(error => {
+                    document.getElementById('city').value = "";
+                    statusText.innerText = "Invalid ZIP Code.";
+                    statusText.className = "text-danger small";
+                });
+        } else {
+            statusText.innerText = "";
+            document.getElementById('city').value = "";
+        }
+    });
+
     paypal.Buttons({
         createOrder: function(data, actions) {
             return actions.order.create({
-                purchase_units: [{
-                    amount: { value: totalAmountUSD }
-                }]
+                purchase_units: [{ amount: { value: totalAmountUSD } }]
             });
         },
         onApprove: function(data, actions) {
@@ -130,6 +178,18 @@
         const cashBtn = document.getElementById('confirm-cash-btn');
         if (cashBtn) cashBtn.disabled = true;
 
+        const isDelivery = document.getElementById('deliveryShip').checked;
+        const deliveryMethod = isDelivery ? 'Delivery' : 'Pickup';
+        const zipCode = document.getElementById('zip_code').value;
+        const city = document.getElementById('city').value;
+        const streetAddress = document.getElementById('street_address').value;
+
+        if (isDelivery && (!zipCode || !city || !streetAddress)) {
+            alert("Please complete your delivery address.");
+            if (cashBtn) cashBtn.disabled = false;
+            return;
+        }
+
         fetch("{% url 'checkout' %}", {
             method: 'POST',
             headers: {
@@ -139,13 +199,14 @@
             },
             body: JSON.stringify({
                 'payment_method': method,
-                'usd_paid': usdPaid
+                'usd_paid': usdPaid,
+                'delivery_method': deliveryMethod,
+                'zip_code': zipCode,
+                'city': city,
+                'street_address': streetAddress
             })
         })
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
                 window.location.href = "{% url 'orders' %}";
@@ -156,7 +217,7 @@
         })
         .catch(error => {
             console.error('Fetch Error:', error);
-            alert("Failed to process order. Please check your connection.");
+            alert("Failed to process order.");
             if (cashBtn) cashBtn.disabled = false;
         });
     }
@@ -165,14 +226,14 @@
         processOrder('COP', 0);
     });
 
-    document.addEventListener('DOMContentLoaded', togglePaymentUI);
+    document.addEventListener('DOMContentLoaded', () => {
+        toggleAddress();
+        togglePaymentUI();
+    });
 </script>
 
 <style>
     .transition-all { transition: all 0.2s ease-in-out; }
-    .hover-shadow:hover {
-        border-color: #ff69b4 !important;
-        box-shadow: 0 4px 8px rgba(255, 105, 180, 0.1) !important;
-    }
+    .hover-shadow:hover { border-color: #ff69b4 !important; box-shadow: 0 4px 8px rgba(255, 105, 180, 0.1) !important; }
 </style>
 {% endblock %}

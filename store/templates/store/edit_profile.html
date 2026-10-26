@@ -61,41 +61,59 @@
                 <div class="card-body p-4 p-md-5">
                     <form method="POST">
                         {% csrf_token %}
-
+                        
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold text-muted small text-uppercase">First Name</label>
-                                <input type="text" name="first_name" value="{{ first_name }}" class="form-control form-control-lg rounded-3 fs-6">
+                                <label class="small text-muted fw-bold">FIRST NAME</label>
+                                <input type="text" name="first_name" class="form-control" value="{{ request.user.first_name }}">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold text-muted small text-uppercase">Last Name</label>
-                                <input type="text" name="last_name" value="{{ last_name }}" class="form-control form-control-lg rounded-3 fs-6">
+                                <label class="small text-muted fw-bold">LAST NAME</label>
+                                <input type="text" name="last_name" class="form-control" value="{{ request.user.last_name }}">
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold text-muted small text-uppercase">Username</label>
-                            <input type="text" name="username" value="{{ username }}" class="form-control form-control-lg rounded-3 fs-6" required>
+                            <label class="small text-muted fw-bold">USERNAME</label>
+                            <input type="text" name="username" class="form-control" value="{{ username }}">
                         </div>
 
-                        <div class="django-form-fields">
-                            {{ form.as_p }}
+                        <div class="mb-3">
+                            <label class="small text-muted fw-bold">EMAIL</label>
+                            <input type="email" name="email" class="form-control" value="{{ email }}" required>
                         </div>
 
-                        <div class="mb-4 mt-2">
-                            <label class="form-label fw-bold text-muted small text-uppercase">New Password</label>
-                            <input type="password" name="password" class="form-control form-control-lg rounded-3 fs-6" placeholder="Leave blank to keep current">
-                            <div class="form-text">Only fill this out if you wish to change your password.</div>
+                        <div class="mb-3">
+                            <label class="small text-muted fw-bold">PHONE</label>
+                            <input type="text" name="phone" class="form-control" value="{{ form.instance.phone|default_if_none:'' }}">
                         </div>
 
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn text-white fw-bold py-3 rounded-pill shadow-sm" style="background-color: #ff69b4;">
-                                Save Changes
-                            </button>
-                            <a href="{% url 'profile' %}" class="btn btn-light text-muted fw-bold py-3 rounded-pill border">
-                                Cancel
-                            </a>
+                        <div class="mb-3">
+                            <label class="small text-muted fw-bold">ZIP CODE</label>
+                            <input type="text" id="zip_code" name="zip_code" class="form-control" value="{{ form.instance.zip_code|default_if_none:'' }}">
+                            <small id="zip-status" class="text-primary"></small>
                         </div>
+
+                        <div class="mb-3">
+                            <label class="small text-muted fw-bold">CITY (Auto-filled via API)</label>
+                            <input type="text" id="city" name="city" class="form-control" value="{{ form.instance.city|default_if_none:'' }}" readonly>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="small text-muted fw-bold">STREET ADDRESS</label>
+                            <input type="text" name="street_address" class="form-control" value="{{ form.instance.street_address|default_if_none:'' }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="small text-muted fw-bold">NEW PASSWORD</label>
+                            <input type="password" name="password" class="form-control" placeholder="Leave blank to keep current">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 mt-3">Save Changes</button>
+                        <a href="{% url 'profile' %}" class="btn btn-light text-muted fw-bold py-3 rounded-pill border">
+                            Cancel
+                        </a>
+                    </div>
 
                     </form>
                 </div>
@@ -105,5 +123,34 @@
         </div>
     </div>
 </div>
+
+<script>
+document.getElementById('zip_code').addEventListener('input', function() {
+    const zip = this.value;
+    const statusText = document.getElementById('zip-status');
+    
+    if (zip.length === 4) {
+        statusText.innerText = "Fetching city via API...";
+        fetch(`http://localhost:5003/api/zip/${zip}`)
+            .then(response => {
+                if (!response.ok) throw new Error("ZIP not found");
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('city').value = data.city;
+                statusText.innerText = "City found successfully!";
+                statusText.className = "text-success small";
+            })
+            .catch(error => {
+                document.getElementById('city').value = "";
+                statusText.innerText = "Invalid ZIP Code.";
+                statusText.className = "text-danger small";
+            });
+    } else {
+        statusText.innerText = "";
+        document.getElementById('city').value = "";
+    }
+});
+</script>
 
 {% endblock %}

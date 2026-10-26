@@ -37,7 +37,7 @@ class CreateUserForm(UserCreationForm):
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = Customer
-        fields = ['phone', 'address']
+        fields = ['phone', 'street_address', 'city', 'zip_code']
         widgets = {
             'address': forms.Textarea(attrs={'rows': 3}),
         }

@@ -23,36 +23,42 @@ class Product(models.Model):
 
 
 class Customer(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    phone = models.CharField(max_length=20)
-    address = models.TextField()
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    name = models.CharField(max_length=200, null=True)
+    phone = models.CharField(max_length=200, null=True)
+    
+    # New dedicated address fields
+    street_address = models.CharField(max_length=200, null=True, blank=True)
+    city = models.CharField(max_length=100, null=True, blank=True)
+    zip_code = models.CharField(max_length=20, null=True, blank=True)
 
     def __str__(self):
-        return self.user.username
+        return str(self.name) if self.name else "Customer"
 
 
 class Order(models.Model):
     STATUS_CHOICES = (
-    ('Pending', 'Pending'),
-    ('Preparing', 'Preparing'),
-    ('Ready for Pickup', 'Ready for Pickup'),
-    ('Completed', 'Completed'),
-    ('Cancelled', 'Cancelled'),
+        ('Pending', 'Pending'),
+        ('Preparing', 'Preparing'),
+        ('Ready for Pickup', 'Ready for Pickup'),
+        ('Completed', 'Completed'),
+        ('Cancelled', 'Cancelled'),
     )
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
-    complete = models.BooleanField(default=False)
+    complete = models.BooleanField(default=False, null=True, blank=False)
+    transaction_id = models.CharField(max_length=100, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
     refunded = models.BooleanField(default=False)
+    
+    # New Delivery Fields
+    delivery_method = models.CharField(max_length=20, default='Pickup')
+    street_address = models.CharField(max_length=200, null=True, blank=True)
+    city = models.CharField(max_length=100, null=True, blank=True)
+    zip_code = models.CharField(max_length=20, null=True, blank=True)
 
     def __str__(self):
         return str(self.id)
-
-    @property
-    def get_total(self):
-        items = self.orderitem_set.all()
-        total = sum([item.get_total for item in items])
-        return total
 
 
 class OrderItem(models.Model):
