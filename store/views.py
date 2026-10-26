@@ -15,6 +15,7 @@ from django.http import JsonResponse
 import json
 from django.conf import settings
 from django.db import transaction
+from .services import get_product_recommendations
 
 # Microservice helper imports
 from .services import convert_php_to_usd, log_order_to_firebase, send_email_receipt
@@ -66,6 +67,9 @@ def logout_user(request):
 def product_list(request):
     products = Product.objects.all().order_by('-id')
     categories = Category.objects.all()
+    
+    # Fetch the external API data
+    recommendations = get_product_recommendations()
 
     search_query = request.GET.get('search', '')
     category_filter = request.GET.get('category', '')
@@ -85,6 +89,7 @@ def product_list(request):
         'categories': categories,
         'search_query': search_query,
         'category_filter': category_filter,
+        'recommendations': recommendations,
     })
 
 

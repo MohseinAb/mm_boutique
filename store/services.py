@@ -54,8 +54,18 @@ def send_email_receipt(email, order_id, total):
             "order_id": order_id,
             "total_amount": total
         }
-        # Docker networking allows us to route directly to the container name
+       
         response = requests.post("http://email_service:5004/api/send-receipt", json=payload, timeout=5)
         return response.json()
     except Exception as e:
         return {"status": "ERROR", "message": str(e)}
+
+def get_product_recommendations():
+    try:
+        response = requests.get("http://recommendation_service:5005/api/recommendations", timeout=5)
+        if response.status_code == 200:
+            return response.json()
+        return []
+    except Exception as e:
+        print(f"Recommendation Error: {e}")
+        return []
